@@ -33,7 +33,7 @@ As you clear lines, you’ll see **tips** about how assays complement each other
 When uploaded to GitHub with Pages enabled, the game will be playable at:
 
 ```
-[https://YOUR-USERNAME.github.io/assay-tetris/]
+[https://savanh1.github.io/assay-tetris/]
 ```
 
 ## 📚 Educational Purpose
