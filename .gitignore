@@ -1,0 +1,23 @@
+# OS / system files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Editor settings
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Node modules
+node_modules/
+
+# Build outputs
+dist/
+build/
