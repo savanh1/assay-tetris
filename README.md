@@ -1,45 +1,32 @@
-# Assay Tetris
-An educational browser game where Tetris blocks represent biomarker assays in translational science.
+# Assay Tetris — Full Pack (controls wired)
 
-Each block represents a different **biomarker assay** used in translational science and pathology:
+This folder is ready to publish as-is. Open `index.html` and the improved controls,
+auto-repeat, and swipe are already connected through `game-input-adapter.js`.
 
-- **NGS** — broad variant profiling  
-- **IHC** — protein localization  
-- **RNA-seq** — gene expression  
-- **Spatial** — contextual analysis  
-- **Imaging** — morphology and structure  
-- **FISH** — amplifications/fusions  
-- **qPCR** — targeted DNA/RNA detection  
+## Use it 2 ways
+1) **Drop-in replacement**: Rename this `index.html` to match your site and copy
+   `controls.css`, `controls.js`, and `game-input-adapter.js` next to it.
+   Edit `game-input-adapter.js` to call your game's movement functions.
 
-As you clear lines, you’ll see **tips** about how assays complement each other in a translational pipeline.
+2) **Patch your existing page**: If you want to keep your current HTML,
+   still copy the three files above and add:
+   ```html
+   <link rel="stylesheet" href="controls.css">
+   <script src="game-input-adapter.js"></script>
+   <script src="controls.js"></script>
+   <script>Controls.enableSwipe(document.querySelector('#board'));</script>
+   ```
 
-## 🎮 How to Play
-- **Desktop**:  
-  - ← / → move  
-  - ↑ rotate  
-  - ↓ soft drop  
-  - **Space** hard drop  
-  - **C** hold piece  
-  - **P** pause  
-  - **R** restart  
+## What you get
+- Instant touch with `pointerdown` (no mobile click delay)
+- Larger hit areas and pressed feedback
+- Hold-to-repeat for left/right/soft
+- Swipe: left/right to move, tap to rotate, swipe down for drop
 
-- **Mobile**: On-screen buttons (Left, Right, Rotate, Down, Drop).
+## Files
+- `index.html` — wired example ready to deploy
+- `controls.css` — styles for controls
+- `controls.js` — pointer + swipe + repeat logic
+- `game-input-adapter.js` — map to your game functions
 
-## 🖥️ Run Locally
-1. Download `index.html`
-2. Open it in any modern browser (Chrome, Safari, Firefox, Edge)
-
-## 🌐 GitHub Pages
-When uploaded to GitHub with Pages enabled, the game will be playable at:
-
-```
-[https://savanh1.github.io/assay-tetris/]
-```
-
-## 📚 Educational Purpose
-This project is part of translational science outreach.  
-The goal is to make learning about **biomarkers and translational assays** fun and accessible through interactive games.
-
-## 📜 License
-See [LICENSE](LICENSE) for details.  
-This project is released under the MIT License, so you can use, modify, and share it freely (with attribution).
+Publish to GitHub Pages or any static host; no build step required.
