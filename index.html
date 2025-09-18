@@ -1,456 +1,82 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
-<title>Assay Tetris — Modern UI</title>
-
-<style>
-  :root{
-    --bg-1:#0b1222;
-    --bg-2:#111a33;
-    --card:#0f1b34;
-    --ink:#eaf0ff;
-    --muted:#a9b8d6;
-    --accent:#7aa2ff;
-    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-
-    --ihc:#f59e0b;   /* O */
-    --qpcr:#10b981;  /* L */
-    --ngs:#6366f1;   /* I */
-    --rna:#ef4444;   /* T */
-    --spatial:#06b6d4; /* S */
-    --img:#a855f7;   /* J */
-    --fish:#f43f5e;  /* Z */
-  }
-
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{
-    margin:0; color:var(--ink); font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-    background: radial-gradient(1600px 600px at 50% -10%, #1b2b55 0%, var(--bg-1) 38%) fixed,
-                linear-gradient(180deg, var(--bg-1), var(--bg-2)) fixed;
-  }
-
-  .wrap{display:flex; align-items:center; justify-content:center; padding:12px; min-height:100%}
-  .shell{
-    width: min(1060px, 96vw);
-    background: linear-gradient(180deg, #0e1a34, #0c162c);
-    border: 1px solid rgba(255,255,255,.08);
-    border-radius: 18px;
-    box-shadow: 0 24px 60px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.04);
-    padding: 14px;
-  }
-
-  .headline{margin:0 0 10px; text-align:center; font-weight:700; letter-spacing:.2px}
-  .headline .sub{display:block; color:var(--muted); font-weight:500; font-size:14px; margin-top:2px}
-
-  .hud{
-    display:flex; flex-wrap:wrap; gap:14px; align-items:center; justify-content:center;
-    font-family: var(--mono); font-size:13px; margin: 6px 0 10px;
-  }
-  .badge{background:#0e1b36; border:1px solid rgba(255,255,255,.08); padding:6px 10px; border-radius:999px;}
-
-  .grid{
-    display:grid; gap:14px; grid-template-columns: 1fr 320px;
-  }
-  @media (max-width: 960px){ .grid{ grid-template-columns: 1fr; } }
-
-  .boardWrap{
-    position:relative;
-    background: #08152d;
-    border: 1px solid rgba(255,255,255,.08);
-    border-radius: 16px;
-    padding: 10px;
-  }
-
-  canvas.board{
-    display:block; margin:0 auto;
-    background: linear-gradient(180deg, #0a1832, #081429);
-    border:1px solid rgba(255,255,255,.08);
-    border-radius:12px;
-    touch-action:none;
-  }
-
-  .panel{
-    background: #0e1b36;
-    border:1px solid rgba(255,255,255,.08);
-    border-radius: 14px;
-    padding: 12px;
-  }
-  .panel h3{margin:0 0 8px}
-  .legend{font-size:13px; color:var(--muted); line-height:1.4}
-  .pill{display:inline-block; padding:2px 8px; border-radius:999px; border:1px solid rgba(255,255,255,.14); margin:0 6px 6px 0; font-family:var(--mono); font-size:12px}
-  .msg{min-height:42px; background:#0b1833; border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:8px; font-family:var(--mono); font-size:13px; margin-top:10px}
-
-  .controls{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
-  .btn{
-    appearance:none; border:1px solid rgba(255,255,255,.14);
-    background: radial-gradient(120px 60px at 50% 20%, rgba(255,255,255,.08), rgba(255,255,255,.03));
-    color:var(--ink); border-radius:10px; padding:8px 10px; font-family:var(--mono); cursor:pointer;
-  }
-  .btn:hover{border-color:#5a7cff}
-
-  /* Touch controls (glassy) */
-  .touchpad{
-    position:fixed; left:0; right:0; bottom:12px; display:flex; justify-content:center; gap:12px;
-    pointer-events:none;
-  }
-  .tbtn{
-    pointer-events:auto;
-    min-width:78px; min-height:78px;
-    display:flex; align-items:center; justify-content:center;
-    border-radius:16px;
-    background: linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.08));
-    border:1px solid rgba(255,255,255,.22);
-    backdrop-filter: blur(6px);
-    color:var(--ink); font-family:var(--mono); font-size:16px;
-    user-select:none; touch-action:none;
-    box-shadow: 0 8px 24px rgba(0,0,0,.35);
-  }
-  .tbtn:active{ background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.1)); }
-
-  /* Overlay */
-  .overlay{
-    position:absolute; inset:10px; display:none; align-items:center; justify-content:center;
-    background: rgba(4,10,22,.55); border-radius:12px; border:1px solid rgba(255,255,255,.08);
-    backdrop-filter: blur(3px);
-  }
-  .overlay .panel{
-    background: #0c1730; border-radius:14px; border:1px solid rgba(255,255,255,.1);
-    text-align:center; padding:14px 16px;
-  }
-</style>
-</head>
-<body>
-<div class="wrap">
-  <div class="shell">
-    <h1 class="headline">Assay Tetris <span class="sub">Build a translational pipeline with complementary assays</span></h1>
-
-    <div class="hud">
-      <div class="badge">Score: <b id="score">0</b></div>
-      <div class="badge">Level: <b id="level">1</b></div>
-      <div class="badge">Lines: <b id="lines">0</b></div>
-      <div class="badge">Hold: <b id="holdLabel">None</b></div>
-    </div>
-
-    <div class="grid">
-      <div class="boardWrap">
-        <canvas id="board" class="board" width="330" height="660" aria-label="Assay Tetris board"></canvas>
-        <div id="overlay" class="overlay">
-          <div class="panel">
-            <h3 id="overlayTitle">Paused</h3>
-            <p class="legend" id="overlayText">Press P to resume or R to restart.</p>
-            <div class="controls">
-              <button class="btn" id="ovResume">Resume (P)</button>
-              <button class="btn" id="ovRestart">Restart (R)</button>
-            </div>
-          </div>
-        </div>
-        <div class="msg" id="msg">Tip: Mix assays. Complementary data reduces blind spots.</div>
-      </div>
-
-      <div class="panel">
-        <h3>Assays</h3>
-        <div class="legend">
-          <span class="pill" style="border-color:var(--ngs)">NGS</span> broad variants<br>
-          <span class="pill" style="border-color:var(--ihc)">IHC</span> protein localization<br>
-          <span class="pill" style="border-color:var(--rna)">RNA‑seq</span> expression<br>
-          <span class="pill" style="border-color:var(--spatial)">Spatial</span> context<br>
-          <span class="pill" style="border-color:var(--img)">Imaging</span> morphology<br>
-          <span class="pill" style="border-color:var(--fish)">FISH</span> ampli/fusions<br>
-          <span class="pill" style="border-color:var(--qpcr)">qPCR</span> targeted DNA/RNA
-        </div>
-
-        <div class="controls">
-          <button class="btn" id="btnPause">Pause (P)</button>
-          <button class="btn" id="btnRestart">Restart (R)</button>
-        </div>
-        <div class="legend" style="margin-top:10px">
-          <b>Desktop</b> ← → move, ↑ rotate, ↓ soft drop, Space hard drop, C hold, P pause, R restart.
-        </div>
-      </div>
-    </div>
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/><title>Assay Tetris — Touch Tuned</title><style>
+:root{--bg1:#0b1222;--bg2:#111a33;--ink:#eaf0ff;--muted:#a9b8d6;--mono:ui-monospace,Menlo,Consolas,monospace;--ngs:#6366f1;--ihc:#f59e0b;--rna:#ef4444;--sp:#06b6d4;--img:#a855f7;--fish:#f43f5e;--qpcr:#10b981}
+*{box-sizing:border-box}html,body{height:100%}body{margin:0;color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:radial-gradient(1600px 600px at 50% -10%,#1b2b55 0%,var(--bg1) 38%),linear-gradient(180deg,var(--bg1),var(--bg2))}
+.wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:12px}
+.shell{width:min(1060px,96vw);background:linear-gradient(180deg,#0e1a34,#0c162c);border:1px solid rgba(255,255,255,.08);border-radius:18px;box-shadow:0 24px 60px rgba(0,0,0,.5);padding:14px}
+.head{margin:0 0 10px;text-align:center;font-weight:700}.sub{display:block;color:var(--muted);font-weight:500;font-size:14px;margin-top:2px}
+.hud{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;font-family:var(--mono);font-size:13px;margin:6px 0 10px}.badge{background:#0e1b36;border:1px solid rgba(255,255,255,.08);padding:6px 10px;border-radius:999px}
+.grid{display:grid;gap:14px;grid-template-columns:1fr 320px}@media(max-width:960px){.grid{grid-template-columns:1fr}}
+.boardWrap{position:relative;background:#08152d;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:10px}
+.board{display:block;margin:0 auto;background:linear-gradient(180deg,#0a1832,#081429);border:1px solid rgba(255,255,255,.08);border-radius:12px;touch-action:none}
+.panel{background:#0e1b36;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px}.panel h3{margin:0 0 8px}
+.legend{font-size:13px;color:var(--muted);line-height:1.4}.pill{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.14);margin:0 6px 6px 0;font-family:var(--mono);font-size:12px}
+.msg{min-height:42px;background:#0b1833;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px;font-family:var(--mono);font-size:13px;margin-top:10px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.btn{appearance:none;border:1px solid rgba(255,255,255,.14);background:radial-gradient(120px 60px at 50% 20%,rgba(255,255,255,.08),rgba(255,255,255,.03));color:var(--ink);border-radius:10px;padding:8px 10px;font-family:var(--mono);cursor:pointer}.btn:hover{border-color:#5a7cff}
+.touchpad{position:fixed;left:0;right:0;bottom:14px;display:flex;justify-content:center;gap:10px;pointer-events:none}
+.tbtn{pointer-events:auto;min-width:56px;min-height:56px;display:flex;align-items:center;justify-content:center;border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.08));border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(6px);color:var(--ink);font-family:var(--mono);font-size:15px;user-select:none;touch-action:none;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+@media(min-width:480px){.tbtn{min-width:60px;min-height:60px}}.tbtn:active{background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,.1))}
+.overlay{position:absolute;inset:10px;display:none;align-items:center;justify-content:center;background:rgba(4,10,22,.55);border-radius:12px;border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(3px)}
+.overlay .panel{background:#0c1730;border-radius:14px;border:1px solid rgba(255,255,255,.1);text-align:center;padding:14px 16px}
+</style></head><body>
+<div class="wrap"><div class="shell">
+<h1 class="head">Assay Tetris <span class="sub">Build a translational pipeline with complementary assays</span></h1>
+<div class="hud"><div class="badge">Score: <b id="score">0</b></div><div class="badge">Level: <b id="level">1</b></div><div class="badge">Lines: <b id="lines">0</b></div><div class="badge">Hold: <b id="holdLabel">None</b></div></div>
+<div class="grid">
+  <div class="boardWrap">
+    <canvas id="board" class="board" width="330" height="660"></canvas>
+    <div id="overlay" class="overlay"><div class="panel"><h3 id="ovTitle">Paused</h3><p class="legend" id="ovText">Press P to resume or R to restart.</p><div class="controls"><button class="btn" id="ovResume">Resume (P)</button><button class="btn" id="ovRestart">Restart (R)</button></div></div></div>
+    <div class="msg" id="msg">Tip: Mix assays. Complementary data reduces blind spots.</div>
   </div>
-</div>
-
-<!-- Touch controls -->
-<div class="touchpad" id="touchpad" aria-hidden="true">
-  <div class="tbtn" id="tLeft">◀</div>
-  <div class="tbtn" id="tRight">▶</div>
-  <div class="tbtn" id="tRotate">↻</div>
-  <div class="tbtn" id="tDown">↓</div>
-  <div class="tbtn" id="tDrop">DROP</div>
-</div>
+  <div class="panel"><h3>Assays</h3><div class="legend">
+    <span class="pill" style="border-color:var(--ngs)">NGS</span> broad variants<br>
+    <span class="pill" style="border-color:var(--ihc)">IHC</span> protein localization<br>
+    <span class="pill" style="border-color:var(--rna)">RNA‑seq</span> expression<br>
+    <span class="pill" style="border-color:var(--sp)">Spatial</span> context<br>
+    <span class="pill" style="border-color:var(--img)">Imaging</span> morphology<br>
+    <span class="pill" style="border-color:var(--fish)">FISH</span> ampli/fusions<br>
+    <span class="pill" style="border-color:var(--qpcr)">qPCR</span> targeted DNA/RNA</div>
+    <div class="controls"><button class="btn" id="btnPause">Pause (P)</button><button class="btn" id="btnRestart">Restart (R)</button></div>
+    <div class="legend" style="margin-top:10px"><b>Desktop</b> ← → move, ↑ rotate, ↓ soft drop, Space hard drop, C hold, P pause, R restart.</div>
+  </div>
+</div></div></div>
+<div class="touchpad" id="pad" aria-hidden="true"><div class="tbtn" id="tLeft">◀</div><div class="tbtn" id="tRight">▶</div><div class="tbtn" id="tRotate">↻</div><div class="tbtn" id="tDown">↓</div><div class="tbtn" id="tDrop">DROP</div></div>
 
 <script>
-(() => {
-  const COLS=10, ROWS=22;
-  const SIZE=30;
-  const board = document.getElementById('board');
-  const ctx = board.getContext('2d');
-  const overlay = document.getElementById('overlay');
-  const ovTitle = document.getElementById('overlayTitle');
-  const ovText = document.getElementById('overlayText');
-  const msg = document.getElementById('msg');
-  const HUD = {
-    score: document.getElementById('score'),
-    level: document.getElementById('level'),
-    lines: document.getElementById('lines'),
-    hold: document.getElementById('holdLabel')
-  };
-
-  const pad = document.getElementById('touchpad');
-  const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;
-  pad.style.display = isTouch ? 'flex' : 'none';
-
-  const COLOR = { I:'#6366f1', O:'#f59e0b', T:'#ef4444', S:'#06b6d4', Z:'#f43f5e', J:'#a855f7', L:'#10b981' };
-  const LABEL = { I:'NGS', O:'IHC', T:'RNA', S:'SP', Z:'FISH', J:'IMG', L:'qPCR' };
-
-  const SHAPES = {
-    I: [[1,1,1,1]], O: [[1,1],[1,1]], T: [[1,1,1],[0,1,0]],
-    S: [[0,1,1],[1,1,0]], Z: [[1,1,0],[0,1,1]], J: [[1,0,0],[1,1,1]], L: [[0,0,1],[1,1,1]]
-  };
-
-  let grid = Array.from({length:ROWS}, ()=>Array(COLS).fill(null));
-  let cur=null, curMat=null, curX=3, curY=0;
-  let hold=null, holdUsed=false;
-  let bag=[];
-  let nextPieceKey = nextFromBag();
-  let dropCounter=0, dropInterval=800;
-  let lastTime=0;
-  let running=true, paused=false, gameover=false;
-  let level=1, lines=0, score=0;
-
-  function nextFromBag(){
-    if(bag.length===0){
-      bag=['I','O','T','S','Z','J','L'];
-      for(let i=bag.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [bag[i],bag[j]]=[bag[j],bag[i]]; }
-    }
-    return bag.pop();
-  }
-
-  function newPiece(){
-    const key = nextPieceKey;
-    nextPieceKey = nextFromBag();
-    cur = key;
-    curMat = SHAPES[key].map(r=>r.slice());
-    curX = 3; curY = -2;
-    holdUsed = false;
-    if(collide(curMat, curX, curY+2)){
-      running=false; gameover=true;
-      showOverlay('Game Over', 'Press R to restart.');
-    }
-  }
-
-  function collide(mat,x,y){
-    for(let r=0;r<mat.length;r++){
-      for(let c=0;c<mat[0].length;c++){
-        if(!mat[r][c]) continue;
-        const nx=x+c, ny=y+r;
-        if(nx<0 || nx>=COLS || ny>=ROWS) return true;
-        if(ny>=0 && grid[ny][nx]) return true;
-      }
-    }
-    return false;
-  }
-
-  function place(){
-    for(let r=0;r<curMat.length;r++){
-      for(let c=0;c<curMat[0].length;c++){
-        if(curMat[r][c]){
-          const nx=curX+c, ny=curY+r;
-          if(ny>=0 && ny<ROWS) grid[ny][nx]={k:cur};
-        }
-      }
-    }
-    const cleared = sweep();
-    score += [0,100,300,500,800][cleared] || 0;
-    lines += cleared;
-    if(cleared>0){
-      showTip(cleared);
-      if(Math.floor(lines/10)+1>level){
-        level=Math.floor(lines/10)+1;
-        dropInterval=Math.max(120, 800-(level-1)*70);
-      }
-    }
-    HUD.score.textContent=score;
-    HUD.level.textContent=level;
-    HUD.lines.textContent=lines;
-    newPiece();
-  }
-
-  function sweep(){
-    let count=0;
-    for(let r=ROWS-1;r>=0;r--){
-      if(grid[r].every(cell=>cell)){
-        grid.splice(r,1);
-        grid.unshift(Array(COLS).fill(null));
-        r++; count++;
-      }
-    }
-    return count;
-  }
-
-  const TIPS=[
-    'IHC + NGS: confirm variant and protein expression.',
-    'qPCR for targeted calls; NGS for breadth.',
-    'RNA‑seq adds expression context to DNA panels.',
-    'Spatial + IHC: put signals in tissue context.',
-    'Imaging links morphology with molecular data.',
-    'FISH validates amplifications/fusions seen on NGS.'
-  ];
-  function showTip(linesCleared){
-    const t=TIPS[Math.floor(Math.random()*TIPS.length)];
-    const prefix = linesCleared===4?'Full stack: ':linesCleared===3?'Strong combo: ':linesCleared===2?'Complementary set: ':'Good fit: ';
-    msg.textContent = prefix + t;
-  }
-
-  function roundRect(x,y,w,h,r){
-    const rr=Math.min(r, w/2, h/2);
-    ctx.beginPath();
-    ctx.moveTo(x+rr,y);
-    ctx.arcTo(x+w,y,x+w,y+h,rr);
-    ctx.arcTo(x+w,y+h,x,y+h,rr);
-    ctx.arcTo(x,y+h,x,y,rr);
-    ctx.arcTo(x,y,x+w,y,rr);
-    ctx.closePath();
-  }
-
-  function drawCell(px,py,k,alpha=1){
-    const color = COLOR[k];
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 12;
-    ctx.fillStyle = color;
-    roundRect(px+3,py+3,SIZE-6,SIZE-6,6);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = '#0b142a';
-    ctx.font = 'bold 12px var(--mono)';
-    ctx.textAlign = 'center';
-    ctx.fillText(LABEL[k], px+SIZE/2, py+SIZE/2+4);
-    ctx.restore();
-  }
-
-  function drawBoard(){
-    ctx.clearRect(0,0,board.width,board.height);
-    ctx.fillStyle='#0a1832'; ctx.fillRect(0,0,board.width,board.height);
-
-    // settled (skip top 2 hidden rows)
-    for(let y=2;y<ROWS;y++){
-      for(let x=0;x<COLS;x++){
-        const cell=grid[y][x];
-        if(cell) drawCell(x*SIZE,(y-2)*SIZE,cell.k,1);
-      }
-    }
-
-    if(!gameover){
-      // ghost
-      let gy=curY;
-      while(!collide(curMat, curX, gy+1)) gy++;
-      for(let r=0;r<curMat.length;r++){
-        for(let c=0;c<curMat[0].length;c++){
-          if(curMat[r][c]){
-            const gx=(curX+c)*SIZE, gy2=(gy-2+r)*SIZE;
-            if(gy2>=0) drawCell(gx, gy2, cur, 0.18);
-          }
-        }
-      }
-      // active
-      for(let r=0;r<curMat.length;r++){
-        for(let c=0;c<curMat[0].length;c++){
-          if(curMat[r][c]){
-            const ax=(curX+c)*SIZE, ay=(curY-2+r)*SIZE;
-            if(ay>=-SIZE) drawCell(ax, ay, cur, 1);
-          }
-        }
-      }
-    }
-  }
-
-  function move(dx){ if(!paused && !gameover && !collide(curMat, curX+dx, curY)) curX+=dx; }
-  function softDrop(){ if(paused||gameover) return; if(!collide(curMat, curX, curY+1)) curY++; else place(); }
-  function hardDrop(){ if(paused||gameover) return; while(!collide(curMat, curX, curY+1)) curY++; place(); }
-  function rotateMat(m){ const R=m.length,C=m[0].length,res=Array.from({length:C},()=>Array(R).fill(0)); for(let r=0;r<R;r++)for(let c=0;c<C;c++)res[c][R-1-r]=m[r][c]; return res; }
-  function rotateCur(){
-    if(paused||gameover) return;
-    const r=rotateMat(curMat);
-    if(!collide(r,curX,curY)) curMat=r;
-    else if(!collide(r,curX-1,curY)){ curX-=1; curMat=r; }
-    else if(!collide(r,curX+1,curY)){ curX+=1; curMat=r; }
-  }
-  function holdSwap(){
-    if(paused||gameover || holdUsed) return;
-    if(!hold){ hold=cur; newPiece(); }
-    else { const tmp=hold; hold=cur; cur=tmp; curMat=SHAPES[cur].map(r=>r.slice()); curX=3; curY=-2; }
-    HUD.hold.textContent = LABEL[hold] || 'None';
-    holdUsed=true;
-  }
-
-  function showOverlay(title,text){ document.getElementById('overlayTitle').textContent=title; document.getElementById('overlayText').textContent=text; overlay.style.display='flex'; }
-  function hideOverlay(){ overlay.style.display='none'; }
-
-  function update(t=0){
-    if(!running){ drawBoard(); return; }
-    const dt=t-lastTime; lastTime=t;
-    if(!paused && !gameover){
-      dropCounter+=dt;
-      if(dropCounter>dropInterval){ softDrop(); dropCounter=0; }
-    }
-    drawBoard();
-    requestAnimationFrame(update);
-  }
-
-  function restart(){
-    grid=Array.from({length:ROWS},()=>Array(COLS).fill(null));
-    bag=[]; nextPieceKey=nextFromBag();
-    hold=null; holdUsed=false;
-    level=1; lines=0; score=0; dropInterval=800;
-    HUD.score.textContent=0; HUD.level.textContent=1; HUD.lines.textContent=0; HUD.hold.textContent='None';
-    msg.textContent='Tip: Mix assays. Complementary data reduces blind spots.';
-    running=true; paused=false; gameover=false; hideOverlay();
-    newPiece(); lastTime=performance.now(); dropCounter=0; requestAnimationFrame(update);
-  }
-
-  window.addEventListener('keydown',(e)=>{
-    if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','p','P','r','R','c','C'].includes(e.key)) e.preventDefault();
-    if(e.key==='r'||e.key==='R'){ restart(); return; }
-    if(e.key==='p'||e.key==='P'){
-      if(gameover) return;
-      paused=!paused;
-      if(paused) showOverlay('Paused','Press P to resume or R to restart.'); else hideOverlay();
-      return;
-    }
-    if(gameover||paused) return;
-    if(e.key==='ArrowLeft') move(-1);
-    if(e.key==='ArrowRight') move(1);
-    if(e.key==='ArrowUp') rotateCur();
-    if(e.key==='ArrowDown') softDrop();
-    if(e.key===' ') hardDrop();
-    if(e.key==='c'||e.key==='C') holdSwap();
-  });
-
-  document.getElementById('btnRestart').addEventListener('click', restart);
-  document.getElementById('btnPause').addEventListener('click', ()=>{
-    if(gameover) return;
-    paused=!paused; if(paused) showOverlay('Paused','Press P to resume or R to restart.'); else hideOverlay();
-  });
-  document.getElementById('ovRestart').addEventListener('click', restart);
-  document.getElementById('ovResume').addEventListener('click', ()=>{ if(!gameover){ paused=false; hideOverlay(); } });
-
-  function bindTouch(id, fn){ const el=document.getElementById(id); el.addEventListener('pointerdown', (e)=>{ e.preventDefault(); fn(); }); }
-  bindTouch('tLeft', ()=> move(-1));
-  bindTouch('tRight', ()=> move(1));
-  bindTouch('tRotate', ()=> rotateCur());
-  bindTouch('tDown', ()=> softDrop());
-  bindTouch('tDrop', ()=> hardDrop());
-
-  // Start
-  newPiece();
-  requestAnimationFrame(update);
+(()=>{
+const COLS=10,ROWS=22,SZ=30,board=document.getElementById('board'),ctx=board.getContext('2d');
+const HUD={s:score,lv:level,ln:lines,h:holdLabel}; const pad=document.getElementById('pad'); const touch=('ontouchstart'in window)||navigator.maxTouchPoints>0; pad.style.display=touch?'flex':'none';
+const C={I:'#6366f1',O:'#f59e0b',T:'#ef4444',S:'#06b6d4',Z:'#f43f5e',J:'#a855f7',L:'#10b981'}, L={I:'NGS',O:'IHC',T:'RNA',S:'SP',Z:'FISH',J:'IMG',L:'qPCR'};
+const SH={I:[[1,1,1,1]],O:[[1,1],[1,1]],T:[[1,1,1],[0,1,0]],S:[[0,1,1],[1,1,0]],Z:[[1,1,0],[0,1,1]],J:[[1,0,0],[1,1,1]],L:[[0,0,1],[1,1,1]]};
+let G=Array.from({length:ROWS},()=>Array(COLS).fill(null)),cur=null,mat=null,x=3,y=0,hold=null,held=false,bag=[],next=nxt(),t=0,iv=800,last=0,paused=false,over=false,lv=1,ln=0,sc=0;
+function nxt(){ if(!bag.length){bag=['I','O','T','S','Z','J','L']; for(let i=bag.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[bag[i],bag[j]]=[bag[j],bag[i]]}} return bag.pop(); }
+function newP(){ cur=next; next=nxt(); mat=SH[cur].map(r=>r.slice()); x=3;y=-2; held=false; if(col(mat,x,y+2)){ over=true; show('Game Over','Press R to restart.'); } }
+function col(m,px,py){ for(let r=0;r<m.length;r++)for(let c=0;c<m[0].length;c++)if(m[r][c]){const nx=px+c,ny=py+r;if(nx<0||nx>=COLS||ny>=ROWS)return true;if(ny>=0&&G[ny][nx])return true} return false; }
+function place(){ for(let r=0;r<mat.length;r++)for(let c=0;c<mat[0].length;c++)if(mat[r][c]){const nx=x+c,ny=y+r;if(ny>=0&&ny<ROWS)G[ny][nx]={k:cur}} const n=clearL(); sc+=[0,100,300,500,800][n]||0; ln+=n; if(n&&((ln/10|0)+1>lv)){ lv=(ln/10|0)+1; iv=Math.max(120,800-(lv-1)*70) } score.textContent=sc; level.textContent=lv; lines.textContent=ln; newP(); }
+function clearL(){ let n=0; for(let r=ROWS-1;r>=0;r--){ if(G[r].every(v=>v)){G.splice(r,1);G.unshift(Array(COLS).fill(null)); r++; n++; } } if(n) tip(n); return n; }
+const tips=['IHC + NGS: confirm variant with protein expression.','qPCR for targeted calls; NGS for breadth.','RNA‑seq adds expression context.','Spatial + IHC: tissue context.','Imaging links morphology with molecular data.','FISH validates amplifications/fusions.'];
+function tip(n){ msg.textContent=(n===4?'Full stack: ':n===3?'Strong combo: ':n===2?'Complementary set: ':'Good fit: ')+tips[(Math.random()*tips.length)|0]; }
+function rr(px,py,w,h,r){const k=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(px+k,py);ctx.arcTo(px+w,py,px+w,py+h,k);ctx.arcTo(px+w,py+h,px,py+h,k);ctx.arcTo(px,py+h,px,py,k);ctx.arcTo(px,py,px+w,py,k);ctx.closePath()}
+function drawCell(px,py,k,a=1){ctx.save();ctx.globalAlpha=a;ctx.shadowColor=C[k];ctx.shadowBlur=12;ctx.fillStyle=C[k];rr(px+3,py+3,SZ-6,SZ-6,6);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#0b142a';ctx.font='bold 12px var(--mono)';ctx.textAlign='center';ctx.fillText(L[k],px+SZ/2,py+SZ/2+4);ctx.restore()}
+function draw(){ctx.clearRect(0,0,board.width,board.height);ctx.fillStyle='#0a1832';ctx.fillRect(0,0,board.width,board.height);
+ for(let r=2;r<ROWS;r++)for(let c=0;c<COLS;c++){const cell=G[r][c]; if(cell) drawCell(c*SZ,(r-2)*SZ,cell.k,1)}
+ if(!over){let gy=y; while(!col(mat,x,gy+1))gy++; for(let r=0;r<mat.length;r++)for(let c=0;c<mat[0].length;c++)if(mat[r][c]){const gx=(x+c)*SZ,gy2=(gy-2+r)*SZ;if(gy2>=0)drawCell(gx,gy2,cur,.18)} for(let r=0;r<mat.length;r++)for(let c=0;c<mat[0].length;c++)if(mat[r][c]){const ax=(x+c)*SZ,ay=(y-2+r)*SZ;if(ay>=-SZ)drawCell(ax,ay,cur,1)} }
+}
+function mv(dx){ if(!paused&&!over&&!col(mat,x+dx,y)) x+=dx }
+function sd(){ if(paused||over) return; if(!col(mat,x,y+1)) y++; else place() }
+function hd(){ if(paused||over) return; while(!col(mat,x,y+1)) y++; place() }
+function rot(m){const R=m.length,C=m[0].length,res=Array.from({length:C},()=>Array(R).fill(0));for(let r=0;r<R;r++)for(let c=0;c<C;c++)res[c][R-1-r]=m[r][c];return res}
+function rt(){ if(paused||over) return; const r=rot(mat); if(!col(r,x,y)) mat=r; else if(!col(r,x-1,y)){x--;mat=r}else if(!col(r,x+1,y)){x++;mat=r} }
+function holdSwap(){ if(paused||over||held) return; if(!hold){hold=cur; newP()} else {const tmp=hold; hold=cur; cur=tmp; mat=SH[cur].map(v=>v.slice()); x=3;y=-2;} holdLabel.textContent=L[hold]||'None'; held=true }
+function show(t,txt){ ovTitle.textContent=t; ovText.textContent=txt; overlay.style.display='flex' } function hide(){ overlay.style.display='none' }
+function loop(ts=0){const dt=ts-last; last=ts; if(!paused&&!over){ t+=dt; if(t>iv){ sd(); t=0 } } draw(); requestAnimationFrame(loop) }
+function restart(){ G=Array.from({length:ROWS},()=>Array(COLS).fill(null)); bag=[]; next=nxt(); hold=null; held=false; lv=1; ln=0; sc=0; iv=800; score.textContent=0; level.textContent=1; lines.textContent=0; holdLabel.textContent='None'; msg.textContent='Tip: Mix assays. Complementary data reduces blind spots.'; paused=false; over=false; hide(); newP(); last=performance.now(); t=0; requestAnimationFrame(loop) }
+window.addEventListener('keydown',e=>{ if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','p','P','r','R','c','C'].includes(e.key)) e.preventDefault();
+ if(e.key==='r'||e.key==='R'){restart();return} if(e.key==='p'||e.key==='P'){ if(over) return; paused=!paused; if(paused) show('Paused','Press P to resume or R to restart.'); else hide(); return }
+ if(over||paused) return; if(e.key==='ArrowLeft') mv(-1); if(e.key==='ArrowRight') mv(1); if(e.key==='ArrowUp') rt(); if(e.key==='ArrowDown') sd(); if(e.key===' ') hd(); if(e.key==='c'||e.key==='C') holdSwap();
+});
+function holdRepeat(el,fn,delay=180,step=65){let timer=null,rep=null;const start=e=>{e.preventDefault();fn();timer=setTimeout(()=>rep=setInterval(fn,step),delay)};const stop=()=>{clearTimeout(timer);clearInterval(rep);timer=rep=null}; el.addEventListener('pointerdown',start);['pointerup','pointerleave','pointercancel'].forEach(v=>el.addEventListener(v,stop))}
+holdRepeat(tLeft,()=>mv(-1)); holdRepeat(tRight,()=>mv(1)); holdRepeat(tDown,()=>sd(),140,55); tRotate.addEventListener('pointerdown',e=>{e.preventDefault();rt()}); tDrop.addEventListener('pointerdown',e=>{e.preventDefault();hd()});
+ovRestart.addEventListener('click',restart); ovResume.addEventListener('click',()=>{if(!over){paused=false;hide()}}); btnRestart.addEventListener('click',restart); btnPause.addEventListener('click',()=>{if(!over){paused=!paused;if(paused)show('Paused','Press P to resume or R to restart.');else hide()}});
+newP(); requestAnimationFrame(loop);
 })();
-</script>
-</body>
-</html>
+</script></body></html>
