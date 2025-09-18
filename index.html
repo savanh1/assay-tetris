@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Assay Tetris</title>
+  <link rel="stylesheet" href="controls.css">
+  <style>
+    /* Minimal page chrome so you can use this as-is */
+    :root{color-scheme: dark light;}
+    body{margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial;
+         background:#0e1a28; color:#e8f0ff;}
+    .wrap{max-width:960px; margin:0 auto; padding:16px;}
+    header h1{font-size:38px; margin:8px 0 2px;}
+    header p{opacity:.8; margin:0 0 18px;}
+    #board{height:520px; border:1px solid rgba(255,255,255,.1);
+           border-radius:14px; background:#0b1724; margin-bottom:14px;
+           position:relative;}
+    .stats{display:flex; gap:16px; margin-bottom:12px; opacity:.9; font-family: ui-monospace,Menlo,Consolas,monospace}
+    .badge{border:1px solid rgba(255,255,255,.14); padding:8px 12px; border-radius:12px;}
+    .tip{opacity:.8; font-size:14px; margin-top:8px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Assay Tetris</h1>
+      <p>Build a translational pipeline with complementary assays.</p>
+    </header>
+
+    <div class="stats">
+      <div class="badge">Score: <span id="sc">0</span></div>
+      <div class="badge">Level: <span id="lv">1</span></div>
+      <div class="badge">Lines: <span id="ln">0</span></div>
+      <div class="badge">Hold: <span id="hd">None</span></div>
+    </div>
+
+    <div id="board" aria-label="Game board"></div>
+
+    <div class="ctrl-bar" role="group" aria-label="Game controls">
+      <button class="ctrl" data-action="left" aria-label="Left">◀</button>
+      <button class="ctrl" data-action="right" aria-label="Right">▶</button>
+      <button class="ctrl" data-action="rotate" aria-label="Rotate">⟲</button>
+      <button class="ctrl" data-action="soft" aria-label="Soft Drop">▾</button>
+      <button class="ctrl primary" data-action="drop" aria-label="Hard Drop">DROP</button>
+      <button class="ctrl" data-action="hold" aria-label="Hold">HOLD</button>
+    </div>
+
+    <p class="tip">Tip: Mix assays. Complementary data reduces blind spots.</p>
+  </div>
+
+  <!-- Map these to your actual game functions in game-input-adapter.js -->
+  <script src="game-input-adapter.js"></script>
+  <!-- Improved controls -->
+  <script src="controls.js"></script>
+  <script>
+    // Optional swipe gestures on the board
+    document.addEventListener('DOMContentLoaded', () => {
+      Controls.enableSwipe(document.getElementById('board'));
+    });
+  </script>
+</body>
+</html>
